@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solver</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$']], // Inline math delimiters
+                displayMath: [['\\[', '\\]']], // Block math delimiters
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'], // Tags to skip
+            },
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        .account-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #252f4d;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .account-details button {
+            background-color: #4c60af;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .account-details button:hover {
+            background-color: #344b8e;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>MathM8</h1>
+    </header>
+    <div class="account-details">
+        <span>Welcome, {{ session['user'] }}</span>
+        <div>
+            <a href="/logout"><button>Logout</button></a>
+        </div>
+    </div>
+    <main class="chatbot-container">
+        <div class="chatbox" id="chatbox"></div>
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Type your math problem here" onkeydown="checkEnter(event)">
+            <button id="sendButton" onclick="sendMessage()">Send</button>
+        </div>
+        <div class="dropzone" id="dropzone">Drag and drop an image here, or click to upload</div>
+    </main>
+    <script>
+        function checkEnter(event) {
+            if (event.key === 'Enter') {
+                document.getElementById('sendButton').click(); // Trigger the click event on the Send button
+            }
+        }
+
+        function showLoadingMessage() {
+            const chatbox = document.getElementById('chatbox');
+            chatbox.innerHTML += `<div class="chat-message bot loading" id="loadingMessage">
+                <span></span><span></span><span></span>
+            </div>`;
+            chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+        }
+
+        function hideLoadingMessage() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) loadingMessage.remove();
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) return;
+
+            const chatbox = document.getElementById('chatbox');
+
+            // Display user input
+            chatbox.innerHTML += `<div class="chat-message user">${userInput}</div>`;
+            document.getElementById('userInput').value = ''; // Clear input field
+
+            showLoadingMessage(); // Show loading animation
+
+            try {
+                // Send input to the backend
+                const response = await fetch('/process_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userInput }),
+                });
+                const data = await response.json();
+
+                // Add bot's response to the chatbox
+                const botMessage = data.response || "Sorry, I couldn't process your request.";
+                hideLoadingMessage(); // Remove loading animation
+                chatbox.innerHTML += `<div class="chat-message bot">${botMessage}</div>`;
+
+                // Trigger MathJax rendering
+                MathJax.typesetPromise().catch(err => console.error('MathJax typesetting failed:', err));
+            } catch (error) {
+                console.error('Error sending message:', error);
+                hideLoadingMessage(); // Remove loading animation
+                chatbox.innerHTML += `<div class="chat-message bot">Sorry, an error occurred. Please try again later.</div>`;
+            }
+        }
+
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const chatbox = document.getElementById('chatbox');
+
+            showLoadingMessage(); // Show loading animation
+
+            try {
+                const response = await fetch('/upload_image', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+
+                hideLoadingMessage(); // Remove loading animation
+                chatbox.innerHTML += `<div class="chat-message bot">
+                    Extracted Problem: ${data.extracted_text || "N/A"}<br>
+                    Solution: ${data.response || "N/A"}
+                </div>`;
+
+                MathJax.typesetPromise();
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                hideLoadingMessage(); // Remove loading animation
+                chatbox.innerHTML += `<div class="chat-message bot">An error occurred while processing the image.</div>`;
+            }
+        }
+
+        const dropzone = document.getElementById('dropzone');
+
+        dropzone.addEventListener('click', () => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = (event) => {
+                const file = event.target.files[0];
+                if (file) uploadImage(file);
+            };
+            fileInput.click();
+        });
+
+        dropzone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropzone.classList.remove('dragover');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                uploadImage(files[0]);
+            }
+        });
+    </script>
+</body>
+</html>
