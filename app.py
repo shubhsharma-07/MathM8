@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from PIL import Image
 import os
-import easyocr
+#import easyocr
 import sqlite3
 from datetime import timedelta, datetime
 import stripe
@@ -33,7 +33,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 
 # Initialize EasyOCR Reader
-reader = easyocr.Reader(['en'])
+#reader = easyocr.Reader(['en'])
 
 # Database setup
 def init_db():
@@ -119,14 +119,14 @@ def math_solver_response(user_input):
         print("Error communicating with Google Gemini API:", e)
         return "Sorry, I encountered an error while solving your math problem."
 
-def extract_text_from_image(image_path):
-    """Use EasyOCR to extract text from an uploaded image."""
-    try:
-        results = reader.readtext(image_path, detail=0)  # Extract text without bounding box details
-        return " ".join(results).strip()
-    except Exception as e:
-        print("Error during OCR:", e)
-        return ""
+#def extract_text_from_image(image_path):
+ #   """Use EasyOCR to extract text from an uploaded image."""
+  #  try:
+   #     results = reader.readtext(image_path, detail=0)  # Extract text without bounding box details
+    #    return " ".join(results).strip()
+    #except Exception as e:
+     #   print("Error during OCR:", e)
+      #  return ""
 
 @app.route('/')
 def home():

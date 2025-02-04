@@ -60,7 +60,7 @@
             <input type="text" id="userInput" placeholder="Type your math problem here" onkeydown="checkEnter(event)">
             <button id="sendButton" onclick="sendMessage()">Send</button>
         </div>
-        <div class="dropzone" id="dropzone">Drag and drop an image here, or click to upload</div>
+       <!--<div class="dropzone" id="dropzone">Drag and drop an image here, or click to upload</div>-->
     </main>
     <script>
         function checkEnter(event) {
@@ -116,7 +116,7 @@
                 chatbox.innerHTML += `<div class="chat-message bot">Sorry, an error occurred. Please try again later.</div>`;
             }
         }
-
+/*
         async function uploadImage(file) {
             const formData = new FormData();
             formData.append('file', file);
@@ -176,7 +176,7 @@
             if (files.length > 0) {
                 uploadImage(files[0]);
             }
-        });
+        });*/
     </script>
 </body>
 </html>
